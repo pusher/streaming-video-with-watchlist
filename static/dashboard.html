@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="icon" href="https://www.onlinelogomaker.com/blog/wp-content/uploads/2017/07/Fotolia_117855281_Subscription_Monthly_M.jpg">
+    <title>Live streamer | Dashboard </title>
+
+  </head>
+
+  <body>
+   <div id="app">
+   <div class="container-fluid row shadow p-1 mb-3">
+
+    <div class="col-3">
+        <img class="ml-3" src="https://www.onlinelogomaker.com/blog/wp-content/uploads/2017/07/Fotolia_117855281_Subscription_Monthly_M.jpg" height="72px" width="72px"/>
+    </div>
+
+    <div class="col-6 ml-auto mt-3">
+            <div class="input-group">
+                    <input type="text" class="form-control" aria-label="Text input with dropdown button">
+                    <div class="input-group-append">
+                      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Search</button>
+                    </div>
+            </div>
+    </div>
+    
+    <div class="col-3 float-right">
+        <img src="https://www.seoclerk.com/pics/319222-1IvI0s1421931178.png"  height="72px" width="72px" class="rounded-circle border"/>
+        <p class="mr-auto mt-3 d-inline"> {{ username }} </p>
+    </div>
+
+    </div>
+
+    <div class="container-fluid">
+
+        <div class="row">
+
+            <div class="col-8">
+                    <div class="embed-responsive embed-responsive-16by9">
+                      <iframe width="560" height="315" src="https://www.youtube.com/embed/CMLD0Lp0JBg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> </div>
+                    <div class="text-center mt-3 p-3 text-muted font-weight-bold border"> {{ count }} of our users are currently viewing this video <hr>
+                            <li class="m-auto text-success" v-for="count in connectedMembers">
+                                    {{ count }}
+                            </li>
+                    </div>
+
+            </div>
+
+            <div class="col-4 border text-justify" style="background: #e0e0e0; height: 30em; overflow-y: scroll; position: relative;">
+
+                <div class="border invisible h-50 w-75 text-center" ref="added" style="font-size: 2rem; position: absolute; right: 0; background: #48cbe0">{{ addedMember }} is online.</div>
+                <div class="border invisible h-50 w-75 text-center" ref="removed" style="font-size: 2rem; position: absolute; right: 0; background: #ff8325">{{ removedMember }} is offline.</div>
+
+                <div class="h-75 text-center">
+
+                    <h2 class="text-center my-3"> Chat </h2>
+
+                    <p class="w-75 m-auto" style="font-size: 1.5rem">
+                        Share what you think about the stream with your group!<br>
+                    </p>
+
+            </div>
+
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://js.pusher.com/7.5/pusher.min.js"></script>
+
+    <script>
+
+       var app = new Vue({
+       el: '#app',
+
+       data: {
+           username: '',
+           count: 0,
+           addedMember: '',
+           removedMember: '',
+           connectedMembers: []
+       },
+
+       created: function(){
+            let that = this;
+
+          fetch('/isLoggedIn', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+          }).then(function(res){ return res.json(); })
+            .then(function(data){ 
+                if(data != 'false'){
+                that.username = data.username;
+                }else{
+                 window.location.replace( "/" );
+             }
+          });
+            this.onLogin()
+       },
+
+       methods: {
+        onLogin: function(){
+            let that = this
+
+            const pusher = new Pusher('YOUR_PUSHER_APP_KEY', {
+              userAuthentication: {
+                endpoint: "/pusher/user-auth",
+              },    
+              cluster: 'YOUR_PUSHER_APP_CLUSTER'
+            }); 
+
+            pusher.user.watchlist.bind('online', (event) => {
+              event.user_ids.forEach(member => {
+                if (that.username !== member) {
+                    that.addedMember = member
+                    that.$refs.added.classList.add('visible');
+                    that.$refs.added.classList.remove('invisible');
+
+                    setTimeout(function() {
+                    that.$refs.added.classList.remove('visible');
+                    that.$refs.added.classList.add('invisible');
+                    }, 3000) 
+                }
+
+                that.connectedMembers.push(member)
+
+              });
+            });
+
+            pusher.user.watchlist.bind('offline', (event) => {
+              event.user_ids.forEach(member => {
+                if (that.username !== member) {
+                    that.removedMember = member
+
+                    that.$refs.removed.classList.add('visible');
+                    that.$refs.removed.classList.remove('invisible');
+
+                    setTimeout(function() {
+                    that.$refs.removed.classList.remove('visible');
+                    that.$refs.removed.classList.add('invisible');
+                    }, 3000)
+                  }
+                  var index = that.connectedMembers.indexOf(member);
+                  if (index > -1) { that.connectedMembers.splice(index, 1) }
+              });
+            });
+
+            pusher.signin()
+
+            let channel = pusher.subscribe('my-channel');
+
+            channel.bind('pusher:subscription_count', (data) => {
+              that.count = data.subscription_count;
+              });
+            }
+      }
+    })
+    </script>
+  </body>
+</html>
