@@ -2,7 +2,7 @@
 
 In this tutorial, we will build a live streaming application that displays the online presence of the users you are interested in and who are currently streaming a video.
 
-[View tutorial]()
+[View tutorial](https://pusher.com/tutorials/build-a-streaming-platform-and-watch-videos-with-your-friends/)
 
 ## Features used
 
